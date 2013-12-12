@@ -41,7 +41,13 @@ ulysses.prototype.start = function(callback) {
 }
 
 ulysses.prototype.stop = function() {
-
+    var self = this;
+    process.nextTick(function() {
+        for(var i in self.workers) {
+            self.workers[i].send('shutdown');
+            self.workers[i].timeout = setTimeout(self._timeout, 5000, i);
+        }
+    });
 }
 
 ulysses.prototype.restart = function() {
@@ -50,6 +56,10 @@ ulysses.prototype.restart = function() {
 
 ulysses.prototype.reload = function() {
 
+}
+
+ulysses.prototype._timeout = function(id) {
+    
 }
 
 
