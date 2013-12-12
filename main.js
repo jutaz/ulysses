@@ -61,12 +61,12 @@ ulysses.prototype.reload = function() {
 
 ulysses.prototype.bind = function(id) {
     worker = this.workers[id];
-    worker.on('disconnect', this._disconnect.bind({selt: this, id: id}));
-    worker.on('exit', this._exit.bind({selt: this, id: id}));
-    worker.on('online', this._online.bind({selt: this, id: id}));
-    worker.on('message', this._message.bind({selt: this, id: id}));
-    worker.on('listening', this._listening.bind({selt: this, id: id}));
-    worker.on('error', this._error.bind({selt: this, id: id}));
+    worker.on('disconnect', this._disconnect.bind({self: this, id: id}));
+    worker.on('exit', this._exit.bind({self: this, id: id}));
+    worker.on('online', this._online.bind({self: this, id: id}));
+    worker.on('message', this._message.bind({self: this, id: id}));
+    worker.on('listening', this._listening.bind({self: this, id: id}));
+    worker.on('error', this._error.bind({self: this, id: id}));
 }
 
 ulysses.prototype._error = function(err) {
@@ -90,7 +90,7 @@ ulysses.prototype._message = function(message) {
 }
 
 ulysses.prototype._disconnect = function() {
-    if(this.) {
+    if(this.self.) {
 
     }
 }
