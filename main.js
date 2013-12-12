@@ -6,4 +6,21 @@ function ulysses(opts) {
     }
 }
 
+ulysses.prototype.start = function() {
+
+}
+
+ulysses.prototype.stop = function() {
+    
+}
+
+ulysses.prototype.restart = function() {
+    
+}
+
+ulysses.prototype.reload = function() {
+    
+}
+
+
 module.exports = ulysses;
