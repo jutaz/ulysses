@@ -9,6 +9,7 @@ function ulysses(opts) {
         throw new Error("Worker must be specified");
     }
     this.started = false;
+    this.stopping = false;
     this.exec = opts.exec;
     this.workers = {};
     this.args = opts.args || [];
@@ -41,13 +42,34 @@ ulysses.prototype.start = function(callback) {
     });
 }
 
-ulysses.prototype.stop = function() {
+ulysses.prototype.stop = function(worker, callback) {
     var self = this;
+    single = true;
+    if('function' == typeof worker) {
+        callback = worker;
+        single = false;
+    }
+    if(this.stopping) {
+        callback();
+        return;
+    }
+    if(!single) {
+        this.stopping = true;
+    }
+    if('object' !== typeof worker && single) {
+        worker = this.workers[worker];
+    }
     process.nextTick(function() {
-        for(var i in self.workers) {
-            self.workers[i].send('shutdown');
-            self.workers[i].timeout = setTimeout(self._timeout, 5000, i);
+        if(single) {
+            worker.send('shutdown');
+            worker.timeout = setTimeout(self._timeout, 5000, worker.id);
+        } else {
+            for(var i in self.workers) {
+                self.workers[i].send('shutdown');
+                self.workers[i].timeout = setTimeout(self._timeout, 5000, i);
+            }
         }
+        callback();
     });
 }
 
@@ -57,6 +79,20 @@ ulysses.prototype.restart = function() {
 
 ulysses.prototype.reload = function() {
 
+}
+
+ulysses.prototype.fork = function(amount, callback) {
+    var self = this;
+    process.nextTick(function() {
+        i = 0;
+        while(i < amount) {
+            worker = cluster.fork();
+            this.workers[worker.id] = worker;
+            this.bind(worker.id);
+            i++;
+        }
+        callback && callback();
+    });
 }
 
 ulysses.prototype.bind = function(id) {
@@ -90,8 +126,11 @@ ulysses.prototype._message = function(message) {
 }
 
 ulysses.prototype._disconnect = function() {
-    if(this.self.) {
-
+    if(this.self.workers[this.id].timeout) {
+        clearTimeout(this.self.workers[this.id].timeout);
+    }
+    if(!this.self.stopping) {
+        this.self.fork(1);
     }
 }
 
