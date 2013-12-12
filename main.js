@@ -73,8 +73,12 @@ ulysses.prototype.stop = function(worker, callback) {
     });
 }
 
-ulysses.prototype.restart = function() {
-
+ulysses.prototype.restart = function(callback) {
+    var self = this;
+    this.stop(function() {
+        self.started = false;
+        self.start(callback);
+    });
 }
 
 ulysses.prototype.reload = function() {
