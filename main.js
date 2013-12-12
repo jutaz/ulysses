@@ -77,6 +77,7 @@ ulysses.prototype.restart = function(callback) {
     var self = this;
     this.stop(function() {
         self.started = false;
+        self.stopping = false;
         self.start(callback);
     });
 }
