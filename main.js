@@ -8,6 +8,7 @@ function ulysses(opts) {
     if(!opts.exec) {
         throw new Error("Worker must be specified");
     }
+    this.started = false;
     this.exec = opts.exec;
     this.workers = {};
     this.args = opts.args || [];
@@ -23,12 +24,19 @@ function ulysses(opts) {
 
 ulysses.prototype.start = function(callback) {
     var self = this;
+    if(this.started) {
+        callback(null, false);
+        return;
+    }
     process.nextTick(function() {
         i = 0;
         while(i < self.numOfWorkers) {
-
+            worker = cluster.fork();
+            this.workers[worker.id] = worker;
             i++;
         }
+        callback(null, true);
+        self.started = true;
     });
 }
 
