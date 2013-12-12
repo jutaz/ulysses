@@ -1,6 +1,6 @@
 {
   "name": "ulysses",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Node cluster with API. WIP",
   "main": "main.js",
   "scripts": {
