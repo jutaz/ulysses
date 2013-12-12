@@ -13,7 +13,7 @@ function ulysses(opts) {
     this.exec = opts.exec;
     this.workers = {};
     this.args = opts.args || [];
-    this.silent = opts.silent || true;
+    this.silent = ("boolean" == typeof opts.silent) ? opts.silent : true;
     this.numOfWorkers = opts.workerNum || os.cpus().length;
     this.env = opts.env || {};
     cluster.setupMaster({
@@ -30,15 +30,10 @@ ulysses.prototype.start = function(callback) {
         return;
     }
     process.nextTick(function() {
-        i = 0;
-        while(i < self.numOfWorkers) {
-            worker = cluster.fork();
-            this.workers[worker.id] = worker;
-            this.bind(worker.id);
-            i++;
-        }
-        callback(null, true);
-        self.started = true;
+        self.fork(self.numOfWorkers, function() {
+            callback && callback(null, true);
+            self.started = true;
+        });
     });
 }
 
@@ -61,20 +56,20 @@ ulysses.prototype.stop = function(worker, callback) {
     }
     process.nextTick(function() {
         if(single) {
-            worker.send('shutdown');
-            worker.timeout = setTimeout(self._timeout, 5000, worker.id);
+            worker.on('disconnect', callback);
+            self.workers[worker.id].timeout = setTimeout(self._timeout.bind(self), 5000, worker.id);
         } else {
             for(var i in self.workers) {
                 self.workers[i].send('shutdown');
-                self.workers[i].timeout = setTimeout(self._timeout, 5000, i);
+                self.workers[i].timeout = setTimeout(self._timeout.bind(self), 5000, i);
             }
+            callback();
         }
-        callback();
     });
 }
 
 ulysses.prototype.restart = function(callback) {
-    var self = this;
+    var self = this;);
     this.stop(function() {
         self.started = false;
         self.stopping = false;
@@ -82,8 +77,21 @@ ulysses.prototype.restart = function(callback) {
     });
 }
 
-ulysses.prototype.reload = function() {
-
+ulysses.prototype.reload = function(callback) {
+    var self = this;
+    process.nextTick(function() {
+        cnt = Object.keys(self.wrokers).length;
+        for(var i in self.workers) {
+            self.stop(self.workers[i], function() {
+                self.fork(1, function() {
+                    cnt--;
+                    if(cnt <= 0) {
+                        callback();
+                    }
+                });
+            });
+        }
+    });
 }
 
 ulysses.prototype.fork = function(amount, callback) {
@@ -92,8 +100,8 @@ ulysses.prototype.fork = function(amount, callback) {
         i = 0;
         while(i < amount) {
             worker = cluster.fork();
-            this.workers[worker.id] = worker;
-            this.bind(worker.id);
+            self.workers[worker.id] = worker;
+            self.bind(worker.id);
             i++;
         }
         callback && callback();
@@ -134,6 +142,8 @@ ulysses.prototype._disconnect = function() {
     if(this.self.workers[this.id].timeout) {
         clearTimeout(this.self.workers[this.id].timeout);
     }
+    this.self.workers[this.id] = null;
+    delete this.self.workers[this.id];
     if(!this.self.stopping) {
         this.self.fork(1);
     }
@@ -144,7 +154,9 @@ ulysses.prototype._fork = function(worker) {
 }
 
 ulysses.prototype._timeout = function(id) {
-    this.workers[id].disconnect();
+    if(this.workers[id]) {
+        this.workers[id].disconnect();
+    }
 }
 
 
